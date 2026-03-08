@@ -1,5 +1,7 @@
 # OpenMOSS
 
+实际展示效果及使用说明详情请移步LINUX DO ！
+
 LINUX DO 实际效果及项目使用说明：https://linux.do/t/topic/1709670
 
 ## 一、OpenMOSS 是什么？
@@ -204,7 +206,7 @@ OpenMOSS/
 
 ```bash
 # 1. 克隆项目
-git clone <repo-url> openmoss
+git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
 # 2. 安装 Python 依赖
@@ -254,7 +256,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
 ```bash
 # 1. 克隆项目到服务器
 cd /opt
-git clone <repo-url> openmoss
+git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
 # 2. 创建虚拟环境并安装依赖
