@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { setupApi } from '@/api/client'
+import { useRouter } from 'vue-router'
+import { resetSetupCache } from '@/router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ChevronRight, ChevronLeft, Check, Copy, RefreshCw } from 'lucide-vue-next'
+
+const router = useRouter()
 
 
 // 向导步骤
@@ -157,8 +161,8 @@ async function handleSubmit() {
 }
 
 function goToLogin() {
-    // 初始化完成后跳转登录，带 from=setup 标记以便登录后跳转到提示词管理
-    window.location.href = '/login?from=setup'
+    resetSetupCache()
+    router.push({ name: 'login', query: { from: 'setup' } })
 }
 
 const steps = [
