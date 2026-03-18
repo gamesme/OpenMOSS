@@ -44,6 +44,9 @@ blocked → assigned （Planner 重新分配）
 pending / assigned / blocked → cancelled （Planner 取消）
 ```
 
+> ⚠️ `review` 状态子任务无法被 `st block`。若 Patrol 发现 `review` 超时（见巡查阈值），
+> 应写 `patrol` 日志通知 Planner，由 Planner 指派 Reviewer 处理。
+
 ## 巡查超时阈值
 
 Patrol 以下情况应标记 `blocked`：
