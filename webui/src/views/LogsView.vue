@@ -8,6 +8,7 @@ import {
     type AdminAgentItem,
     type AdminPageResponse,
 } from '@/api/client'
+import { formatRelativeTime } from '@/composables/useActivityFeed'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,17 +114,6 @@ function formatDate(value: string | null) {
     }).format(date)
 }
 
-function formatRelativeTime(value: string | null) {
-    if (!value) return ''
-    const now = Date.now()
-    const time = new Date(value).getTime()
-    if (Number.isNaN(time)) return ''
-    const diff = Math.floor((now - time) / 1000)
-    if (diff < 60) return '刚刚'
-    if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`
-    return `${Math.floor(diff / 86400)} 天前`
-}
 
 function toggleExpand(id: string) {
     if (expandedIds.has(id)) {

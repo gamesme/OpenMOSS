@@ -8,6 +8,7 @@ import {
     type AdminAgentDetail,
     type AdminPageResponse,
 } from '@/api/client'
+import { formatRelativeTime } from '@/composables/useActivityFeed'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -116,20 +117,6 @@ function formatDate(value: string | null) {
     }).format(date)
 }
 
-function formatRelativeTime(value: string | null) {
-    if (!value) return '从未'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '从未'
-    const now = Date.now()
-    const diff = now - date.getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return '刚刚'
-    if (mins < 60) return `${mins} 分钟前`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours} 小时前`
-    const days = Math.floor(hours / 24)
-    return `${days} 天前`
-}
 
 // ─── 数据加载 ───
 
