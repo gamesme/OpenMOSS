@@ -162,7 +162,7 @@ async function handleSubmit() {
 
 function goToLogin() {
     resetSetupCache()
-    router.push({ name: 'login', query: { from: 'setup' } })
+    void router.push({ name: 'login', query: { from: 'setup' } })
 }
 
 const steps = [

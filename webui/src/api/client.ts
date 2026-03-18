@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
-import router from '@/router'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -23,7 +22,7 @@ api.interceptors.response.use(
     if (error.response?.status === 403 && !error.config?.url?.includes('/admin/login')) {
       const auth = useAuthStore()
       auth.logout()
-      router.push({ name: 'login' })
+      void import('@/router').then(({ default: r }) => r.push({ name: 'login' }))
     }
     return Promise.reject(error)
   },
