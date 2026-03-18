@@ -20,7 +20,7 @@ VALID_TRANSITIONS = {
     "in_progress":  ["review"],
     "review":       ["done", "rework"],
     "rework":       ["in_progress"],
-    "blocked":      ["pending"],                     # 巡查标记后，规划师重新分配
+    "blocked":      ["pending"],                     # 注：reassign_sub_task 直接转 assigned，绕过此表（业务需要）
     "done":         [],                              # 终态
     "cancelled":    [],                              # 终态
 }
@@ -247,15 +247,19 @@ def block_sub_task(db: Session, sub_task_id: str) -> SubTask:
 
 
 def reassign_sub_task(db: Session, sub_task_id: str, agent_id: str) -> SubTask:
-    """重新分配：blocked → pending（规划师操作）"""
-    # 校验 Agent 存在
+    """重新分配：blocked → assigned（规划师操作，原子完成）"""
     agent = db.query(Agent).filter(Agent.id == agent_id).first()
     if not agent:
         raise ValueError(f"Agent {agent_id} 不存在")
 
-    sub_task = _change_status(db, sub_task_id, "pending")
-    sub_task.assigned_agent = agent_id
+    sub_task = db.query(SubTask).filter(SubTask.id == sub_task_id).first()
+    if not sub_task:
+        raise ValueError(f"子任务 {sub_task_id} 不存在")
+    if sub_task.status != "blocked":
+        raise ValueError(f"只能对 blocked 状态的子任务重新分配，当前: {sub_task.status}")
+
     sub_task.status = "assigned"
+    sub_task.assigned_agent = agent_id
     sub_task.current_session_id = None
     db.commit()
     db.refresh(sub_task)
