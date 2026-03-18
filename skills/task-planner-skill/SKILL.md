@@ -98,6 +98,8 @@ log list --days 30 --limit 50             # 最近30天，最多50条
 - 每次唤醒时检查 `score logs`，有扣分则分析原因改进
 - 创建任务后状态默认为 `planning`，拆分完成后用 `task status` 改为 `active`
 - 分配子任务时参考 `score leaderboard`，优先选择高分 Agent
+- **兜底策略**：若高分 Agent 已有 2+ 个 `in_progress` 子任务，改为分配给次高分且负载较低的 Agent，避免过载
+- **复苏机会**：低分 Agent（积分 < 0）每轮至少分配 1 个难度较低的子任务，提供积分恢复机会
 - 留意 `st list --status blocked`，及时重新分配
 - `type=recurring` 且 `status=done` 的子任务 → 创建同名新子任务开启下一轮
 - 所有子任务 done → 执行收尾交付（汇总交付物 → 任务状态改 completed → 发通知）
