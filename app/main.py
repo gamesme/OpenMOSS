@@ -73,7 +73,6 @@ async def lifespan(app: FastAPI):
     print(f"[{config.project_name}] 服务启动 → http://{config.server_host}:{config.server_port}")
     print(f"[{config.project_name}] 数据库: {config.database_path}")
     print(f"[{config.project_name}] 工作目录: {config.workspace_root}")
-    print(f"[{config.project_name}] 注册令牌: {config.registration_token}")
 
     yield
 
@@ -92,10 +91,23 @@ app = FastAPI(
 app.add_middleware(RequestLoggerMiddleware)
 
 # CORS 跨域支持（前后端分离部署时需要，必须在最外层）
+# allow_origins=["*"] + allow_credentials=True 违反 CORS 规范，浏览器会拒绝凭证请求，
+# 改为明确列出允许的来源（localhost 开发地址 + 配置的外网地址）
 from fastapi.middleware.cors import CORSMiddleware
+
+_cors_origins = [
+    "http://localhost:6565",
+    "http://127.0.0.1:6565",
+    "http://localhost:5173",   # Vite 开发服务器
+    "http://127.0.0.1:5173",
+]
+_ext_url = config.server_external_url
+if _ext_url and _ext_url not in _cors_origins:
+    _cors_origins.append(_ext_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -65,9 +65,17 @@ class AppConfig:
         admin["password"] = f"bcrypt:{hashed}"
         self._data["admin"] = admin
 
-        # 回写配置文件
-        with open(self.config_path, "w", encoding="utf-8") as f:
-            yaml.dump(self._data, f, allow_unicode=True, default_flow_style=False)
+        # 回写配置文件：仅替换 password 行，保留 YAML 注释和键名顺序
+        import re
+        raw = self.config_path.read_text(encoding="utf-8")
+        encrypted_value = f"bcrypt:{hashed}"
+        new_raw = re.sub(
+            r"^(\s+password:\s*).*$",
+            lambda m: m.group(1) + encrypted_value,
+            raw,
+            flags=re.MULTILINE,
+        )
+        self.config_path.write_text(new_raw, encoding="utf-8")
 
         print(f"[Config] 管理员密码已加密为 bcrypt")
 
@@ -146,8 +154,8 @@ class AppConfig:
         self._data["admin"]["password"] = f"bcrypt:{hashed}"
         self._save()
 
-    def get_safe_config(self) -> dict:
-        """获取脱敏后的配置（密码/令牌等替换为 ***）"""
+    def get_admin_config(self) -> dict:
+        """获取管理员可见的配置（密码替换为 ***，注册令牌原样返回供管理员查看）"""
         import copy
         safe = copy.deepcopy(self._data)
 

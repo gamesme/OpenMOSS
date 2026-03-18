@@ -83,19 +83,6 @@ async def get_my_score(
     return reward_service.get_agent_score(db, agent.id)
 
 
-@router.get("/{agent_id}", response_model=ScoreSummaryResponse, summary="查看 Agent 积分")
-async def get_agent_score(
-    agent_id: str,
-    _: bool = Depends(verify_admin),
-    db: Session = Depends(get_db),
-):
-    """管理员查看指定 Agent 积分"""
-    try:
-        return reward_service.get_agent_score(db, agent_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-
 @router.get("/me/logs", summary="查看我的积分明细")
 async def get_my_reward_logs(
     page: int = 1,
@@ -113,6 +100,19 @@ async def get_my_reward_logs(
     query = db.query(RewardLog).filter(RewardLog.agent_id == agent.id)
     query = query.order_by(RewardLog.created_at.desc())
     return paginate(query, page=page, page_size=page_size)
+
+
+@router.get("/{agent_id}", response_model=ScoreSummaryResponse, summary="查看 Agent 积分")
+async def get_agent_score(
+    agent_id: str,
+    _: bool = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员查看指定 Agent 积分"""
+    try:
+        return reward_service.get_agent_score(db, agent_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{agent_id}/logs", summary="查看积分明细")

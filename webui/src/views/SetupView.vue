@@ -50,12 +50,9 @@ const allowRegistration = ref(true)
 const notificationEnabled = ref(false)
 
 function generateToken() {
-    const chars = 'abcdef0123456789'
-    let result = ''
-    for (let i = 0; i < 32; i++) {
-        result += chars[Math.floor(Math.random() * chars.length)]
-    }
-    return result
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
 }
 
 function regenerateToken() {

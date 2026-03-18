@@ -25,11 +25,9 @@ setup:  ## 创建 venv 并安装依赖
 # ── supervisord 方式（跨平台，推荐日常开发）────────────────
 
 start:  ## 启动服务（supervisord）
-	@[ -f $(SOCK) ] && echo "服务已在运行，请用 make restart" && exit 0 || true
-	@mkdir -p logs
-	.venv/bin/supervisord -c $(CONF)
-	@sleep 1
-	@$(MAKE) status
+	@if [ -f $(SOCK) ]; then echo "服务已在运行，请用 make restart"; else \
+	  mkdir -p logs && .venv/bin/supervisord -c $(CONF) && sleep 1 && $(MAKE) status; \
+	fi
 
 stop:   ## 停止服务（supervisord）
 	@[ -f $(SOCK) ] && .venv/bin/supervisorctl -c $(CONF) shutdown || echo "服务未运行"

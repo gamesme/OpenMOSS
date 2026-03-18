@@ -21,6 +21,11 @@ engine = create_engine(
     echo=False,
 )
 
+# 开启 WAL 模式，避免调度器后台线程与 API 请求并发写入时出现 database is locked
+from sqlalchemy import text as _text
+with engine.connect() as _conn:
+    _conn.execute(_text("PRAGMA journal_mode=WAL"))
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

@@ -32,7 +32,7 @@ async def get_config(_=Depends(verify_admin)):
     获取当前系统配置（脱敏）。
     密码字段显示为 ***，注册令牌原样返回（管理员需要查看）。
     """
-    return config.get_safe_config()
+    return config.get_admin_config()
 
 
 @router.put("", summary="更新系统配置")

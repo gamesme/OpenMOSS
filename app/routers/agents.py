@@ -1,6 +1,7 @@
 """
 Agent 路由 — 注册、查询、管理
 """
+import secrets
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -63,7 +64,7 @@ async def register_agent(
     """Agent 使用注册令牌自注册，获取 API Key"""
     if not config.allow_registration:
         raise HTTPException(status_code=403, detail="Agent 自注册已关闭，请联系管理员创建")
-    if x_registration_token != config.registration_token:
+    if not secrets.compare_digest(x_registration_token, config.registration_token):
         raise HTTPException(status_code=403, detail="注册令牌无效")
 
     try:

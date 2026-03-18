@@ -5,6 +5,9 @@ import uuid
 from datetime import datetime
 from sqlalchemy.orm import Session
 
+VALID_PRIORITIES = {"high", "medium", "low"}
+VALID_TYPES = {"once", "recurring"}
+
 from app.models.sub_task import SubTask
 from app.models.task import Task
 from app.models.module import Module
@@ -56,6 +59,11 @@ def create_sub_task(
         agent = db.query(Agent).filter(Agent.id == assigned_agent).first()
         if not agent:
             raise ValueError(f"Agent {assigned_agent} 不存在")
+
+    if priority not in VALID_PRIORITIES:
+        raise ValueError(f"priority 无效：{priority}，允许值：{', '.join(VALID_PRIORITIES)}")
+    if type not in VALID_TYPES:
+        raise ValueError(f"type 无效：{type}，允许值：{', '.join(VALID_TYPES)}")
 
     # 如果指定了 Agent，默认状态为 assigned
     initial_status = "assigned" if assigned_agent else "pending"
@@ -150,22 +158,10 @@ def claim_sub_task(db: Session, sub_task_id: str, agent_id: str, session_id: str
 
 def start_sub_task(db: Session, sub_task_id: str, session_id: str = None) -> SubTask:
     """开始执行：assigned/rework → in_progress"""
-    sub_task = db.query(SubTask).filter(SubTask.id == sub_task_id).first()
-    if not sub_task:
-        raise ValueError(f"子任务 {sub_task_id} 不存在")
-
-    if sub_task.status not in ("assigned", "rework"):
-        raise ValueError(
-            f"状态转移不合法：{sub_task.status} → in_progress，"
-            f"仅 assigned/rework 状态可以开始执行"
-        )
-
-    sub_task.status = "in_progress"
+    kwargs = {}
     if session_id:
-        sub_task.current_session_id = session_id
-    db.commit()
-    db.refresh(sub_task)
-    return sub_task
+        kwargs["current_session_id"] = session_id
+    return _change_status(db, sub_task_id, "in_progress", **kwargs)
 
 
 def submit_sub_task(db: Session, sub_task_id: str) -> SubTask:
@@ -291,6 +287,8 @@ def update_sub_task(
     if acceptance is not None:
         sub_task.acceptance = acceptance
     if priority is not None:
+        if priority not in VALID_PRIORITIES:
+            raise ValueError(f"priority 无效：{priority}，允许值：{', '.join(VALID_PRIORITIES)}")
         sub_task.priority = priority
     db.commit()
     db.refresh(sub_task)

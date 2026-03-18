@@ -11,6 +11,7 @@ COPY app/ ./app/
 COPY static/ ./static/
 COPY skills/ ./skills/
 COPY prompts/ ./prompts/
+COPY rules/ ./rules/
 
 # 运行时端口
 EXPOSE 6565
