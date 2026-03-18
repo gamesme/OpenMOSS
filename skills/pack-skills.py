@@ -1,9 +1,13 @@
 """
 一键打包各角色 Skill 压缩包
-每个 zip 包含: SKILL.md + task-cli.py
+每个 zip 包含: SKILL.md + task-cli.py（共 2 个文件）
 
 用法: python skills/pack-skills.py
 输出: skills/dist/ 目录下生成各角色的 zip 文件
+
+注意：首次注册引导文件（prompts/tool/agent-onboarding.md）
+不打入 zip，需在 OpenClaw 中单独加载为临时 Context 文件。
+Agent 完成注册后应按引导执行第 4 步自行删除该文件。
 """
 import os
 import zipfile
