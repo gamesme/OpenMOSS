@@ -88,3 +88,4 @@ log list --days 3 --limit 10             # 最近3天，最多10条
 - 收到返工（rework）时，先看 `review list` 了解具体问题再修复
 - 不要操作不属于自己的子任务
 - 完成后将通知发送到配置的渠道（通过 `notification` 查看渠道）
+- 写 `blocked` 求助日志 ≠ 子任务状态变为 blocked；状态变更由 Patrol 执行，你只需写日志等待响应

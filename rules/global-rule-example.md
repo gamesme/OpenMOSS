@@ -71,6 +71,12 @@ Patrol 以下情况应标记 `blocked`：
 | `review`     | Reviewer | 审查过程记录                                        |
 | `patrol`     | Patrol   | 巡查记录                                            |
 
+> ⚠️ **区分两种 blocked**：
+> - `log create "blocked"` — Executor **求助日志**，仅记录问题，**不改变子任务状态**
+> - `st block <id>` — Patrol **状态命令**，将子任务状态切换为 `blocked`
+>
+> Executor 写完求助日志后子任务仍为 `in_progress`，需等 Patrol 巡查后标记。
+
 ### 查询参数
 
 日志查询支持 `--days` 和 `--limit` 参数，由你根据实际需要自行决策传值：
