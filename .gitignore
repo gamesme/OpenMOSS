@@ -1,6 +1,7 @@
 # OpenClaw 项目
 data/
 config.yaml
+.worktrees/
 prompts-private/
 tests/
 skills/dist/
