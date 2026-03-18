@@ -41,23 +41,30 @@ onMounted(() => {
 async function loadData() {
     loading.value = true
     error.value = ''
-    try {
-        const [overviewRes, highlightsRes, trendsRes] = await Promise.all([
-            adminDashboardApi.overview(),
-            adminDashboardApi.highlights({ limit: 5 }),
-            adminDashboardApi.trends({ days: 7 }),
-        ])
-        data.value = overviewRes.data
-        highlights.value = highlightsRes.data
-        trends.value = trendsRes.data
-        await nextTick()
-        triggerAnimations()
-    } catch (e) {
-        console.error('Failed to load dashboard', e)
-        error.value = '仪表盘数据加载失败'
-    } finally {
-        loading.value = false
+    const [overviewRes, highlightsRes, trendsRes] = await Promise.allSettled([
+        adminDashboardApi.overview(),
+        adminDashboardApi.highlights({ limit: 5 }),
+        adminDashboardApi.trends({ days: 7 }),
+    ])
+    if (overviewRes.status === 'fulfilled') {
+        data.value = overviewRes.value.data
+    } else {
+        console.error('Failed to load overview', overviewRes.reason)
+        error.value = '概览数据加载失败'
     }
+    if (highlightsRes.status === 'fulfilled') {
+        highlights.value = highlightsRes.value.data
+    } else {
+        console.error('Failed to load highlights', highlightsRes.reason)
+    }
+    if (trendsRes.status === 'fulfilled') {
+        trends.value = trendsRes.value.data
+    } else {
+        console.error('Failed to load trends', trendsRes.reason)
+    }
+    await nextTick()
+    triggerAnimations()
+    loading.value = false
 }
 
 function formatRelativeTime(value: string | null) {
