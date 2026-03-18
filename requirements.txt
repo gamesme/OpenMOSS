@@ -6,3 +6,4 @@ httpx>=0.25.0
 bcrypt>=4.0.0
 python-frontmatter>=1.0.0
 apscheduler>=3.10.0
+supervisor>=4.2.0
