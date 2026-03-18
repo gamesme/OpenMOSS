@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenMOSS Task Scheduling Middleware
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=CURRENT_USER
+WorkingDirectory=PROJECT_ROOT
+ExecStart=VENV_PYTHON -m uvicorn app.main:app --host 0.0.0.0 --port 6565
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+StandardOutput=append:PROJECT_ROOT/logs/stdout.log
+StandardError=append:PROJECT_ROOT/logs/stderr.log
+
+[Install]
+WantedBy=multi-user.target
