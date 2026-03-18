@@ -44,6 +44,22 @@ blocked → assigned （Planner 重新分配）
 pending / assigned / blocked → cancelled （Planner 取消）
 ```
 
+> ⚠️ `review` 状态子任务无法被 `st block`。若 Patrol 发现 `review` 超时（见巡查阈值），
+> 应写 `patrol` 日志通知 Planner，由 Planner 指派 Reviewer 处理。
+
+## 巡查超时阈值
+
+Patrol 以下情况应标记 `blocked`：
+
+| 子任务状态    | 超时条件                          |
+| ------------- | --------------------------------- |
+| `assigned`    | 分配后超过 **2 小时** 未 `start`  |
+| `in_progress` | 启动后超过 **4 小时** 未 `submit` |
+| `rework`      | 返工后超过 **2 小时** 未 `start`  |
+| `review`      | 提交后超过 **4 小时** 无审查结果  |
+
+> `review` 状态超时时，Patrol 需在日志中写明，并通知 Planner 指派 Reviewer，无法直接 `st block`。
+
 ## 活动日志规范
 
 写入日志时 `action` 必须使用以下类型（系统会校验，非法类型会被拒绝）：
@@ -57,6 +73,12 @@ pending / assigned / blocked → cancelled （Planner 取消）
 | `plan`       | Planner  | 规划/分配/排障记录                                  |
 | `review`     | Reviewer | 审查过程记录                                        |
 | `patrol`     | Patrol   | 巡查记录                                            |
+
+> ⚠️ **区分两种 blocked**：
+> - `log create "blocked"` — Executor **求助日志**，仅记录问题，**不改变子任务状态**
+> - `st block <id>` — Patrol **状态命令**，将子任务状态切换为 `blocked`
+>
+> Executor 写完求助日志后子任务仍为 `in_progress`，需等 Patrol 巡查后标记。
 
 ### 查询参数
 
@@ -77,11 +99,21 @@ pending / assigned / blocked → cancelled （Planner 取消）
 ## 工作目录规范
 
 - 公共工作目录：`{{workspace_root}}`（由系统自动替换为配置值）
+- **首次执行前检查**：若路径仍为字面量 `{{workspace_root}}`（未被替换），**立即停止并告知用户管理员未完成配置**，不要在此路径下创建任何文件
 - 任务目录：`{{workspace_root}}/tasks/{任务名称}_{任务短ID}/`
 - 子任务目录：`{任务目录}/{子任务名称}_{子任务短ID}/`
 - 文件夹名称中的空格和特殊字符替换为下划线，短 ID 取前 6 位
 - 所有产出物必须放在对应的子任务工作目录下
 - 不要在工作目录外创建或修改文件
+
+## 任务类型说明
+
+| type        | 含义                   | 完成后行为                                             |
+| ----------- | ---------------------- | ------------------------------------------------------ |
+| `once`      | 一次性任务             | 所有子任务 done → Planner 将 Task 改为 `completed`     |
+| `recurring` | 周期性任务，持续执行   | 子任务 done → **Planner 立即创建同名新子任务**开启下一轮，Task 永不 completed |
+
+> Reviewer 审查通过 `recurring` 子任务后，需在审查日志中注明「循环任务，请 Planner 续建」，方便 Planner 及时响应。
 
 ## 工作流程规范
 
@@ -129,13 +161,14 @@ pending / assigned / blocked → cancelled （Planner 取消）
 
 | 分数 | 含义     | 积分影响 |
 | ---- | -------- | -------- |
-| 5    | 超出预期 | +5       |
+| 5    | 超出预期 | +10      |
 | 4    | 完全达标 | +5       |
 | 3    | 基本达标 | 无变化   |
 | 2    | 部分不足 | -5       |
-| 1    | 严重不足 | -5       |
+| 1    | 严重不足 | -10      |
 
 积分越高，越容易被分配到新任务。请以一次通过审查为目标，减少返工。
+若积分为负，Planner 会优先分配简单任务帮助你恢复，请珍惜机会认真完成。
 
 你可以通过 `score leaderboard` 命令查看积分排行榜，了解自己在团队中的位置。
 

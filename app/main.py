@@ -33,6 +33,7 @@ from app.routers import (
     tools,
 )
 from app.middleware.request_logger import RequestLoggerMiddleware
+from app.scheduler import create_scheduler
 
 
 def _cleanup_old_request_logs():
@@ -64,11 +65,19 @@ async def lifespan(app: FastAPI):
     # 清理过期请求日志
     _cleanup_old_request_logs()
 
+    # 启动后台调度器
+    scheduler = create_scheduler()
+    scheduler.start()
+    print(f"[{config.project_name}] 调度器已启动（超时检查: {config.timeout_check_interval}min，recurring续建: {config.recurring_check_interval}min）")
+
     print(f"[{config.project_name}] 服务启动 → http://{config.server_host}:{config.server_port}")
     print(f"[{config.project_name}] 数据库: {config.database_path}")
     print(f"[{config.project_name}] 工作目录: {config.workspace_root}")
     print(f"[{config.project_name}] 注册令牌: {config.registration_token}")
+
     yield
+
+    scheduler.shutdown(wait=False)
     print(f"[{config.project_name}] 服务关闭")
 
 

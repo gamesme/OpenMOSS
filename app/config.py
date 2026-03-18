@@ -235,6 +235,30 @@ class AppConfig:
         return self._data.get("cli", {}).get("version", 1)
 
     @property
+    def scheduler_config(self) -> dict:
+        return self._data.get("scheduler", {})
+
+    @property
+    def timeout_check_interval(self) -> int:
+        return self.scheduler_config.get("timeout_check_interval_minutes", 30)
+
+    @property
+    def assigned_timeout_hours(self) -> int:
+        return self.scheduler_config.get("assigned_timeout_hours", 2)
+
+    @property
+    def in_progress_timeout_hours(self) -> int:
+        return self.scheduler_config.get("in_progress_timeout_hours", 4)
+
+    @property
+    def rework_timeout_hours(self) -> int:
+        return self.scheduler_config.get("rework_timeout_hours", 2)
+
+    @property
+    def recurring_check_interval(self) -> int:
+        return self.scheduler_config.get("recurring_check_interval_minutes", 5)
+
+    @property
     def raw(self) -> dict:
         """获取原始配置数据"""
         return self._data

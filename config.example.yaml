@@ -55,3 +55,14 @@ webui:
 # 初始化标记（由 Setup Wizard 自动设置，请勿手动修改）
 setup:
   initialized: false
+
+# 后台调度器配置
+scheduler:
+  # 超时检测：自动将卡住的子任务标记为 blocked
+  timeout_check_interval_minutes: 30   # 每隔多少分钟巡查一次
+  assigned_timeout_hours: 2            # assigned 状态超过此时间未 start → blocked
+  in_progress_timeout_hours: 4         # in_progress 状态超过此时间未 submit → blocked
+  rework_timeout_hours: 2              # rework 状态超过此时间未 start → blocked
+
+  # recurring 子任务自动续建
+  recurring_check_interval_minutes: 5  # 每隔多少分钟检查一次 done 的 recurring 子任务

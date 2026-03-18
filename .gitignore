@@ -7,6 +7,13 @@ tests/
 skills/dist/
 docs/WordPress_API.md
 
+# 运行时产物
+logs/
+deploy/*.plist
+deploy/*.service
+supervisord.pid
+supervisord.sock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
