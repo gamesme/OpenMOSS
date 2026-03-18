@@ -12,7 +12,6 @@ import { ChevronRight, ChevronLeft, Check, Copy, RefreshCw } from 'lucide-vue-ne
 
 const router = useRouter()
 
-
 // 向导步骤
 const currentStep = ref(0)
 const totalSteps = 5

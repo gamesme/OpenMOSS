@@ -495,7 +495,7 @@ async function handleDeleteAgent() {
                             </span>
                             <span v-else class="opacity-50">无待办</span>
                             <span class="ml-auto tabular-nums opacity-60">
-                                {{ formatRelativeTime(agent.last_request_at) }}
+                                {{ formatRelativeTime(agent.last_request_at) || '从未' }}
                             </span>
                         </div>
 
@@ -665,7 +665,7 @@ async function handleDeleteAgent() {
                             <div>
                                 <div class="text-[11px] text-muted-foreground/60">最近请求</div>
                                 <div class="text-sm font-medium mt-0.5">
-                                    {{ formatRelativeTime(selectedAgent.last_request_at) }}
+                                    {{ formatRelativeTime(selectedAgent.last_request_at) || '从未' }}
                                 </div>
                                 <div class="text-[10px] text-muted-foreground">
                                     {{ formatDate(selectedAgent.last_request_at) }}
@@ -674,7 +674,7 @@ async function handleDeleteAgent() {
                             <div>
                                 <div class="text-[11px] text-muted-foreground/60">最近活动</div>
                                 <div class="text-sm font-medium mt-0.5">
-                                    {{ formatRelativeTime(selectedAgent.last_activity_at) }}
+                                    {{ formatRelativeTime(selectedAgent.last_activity_at) || '从未' }}
                                 </div>
                                 <div class="text-[10px] text-muted-foreground">
                                     {{ formatDate(selectedAgent.last_activity_at) }}
