@@ -9,13 +9,13 @@ from app.models.reward_log import RewardLog
 from app.models.agent import Agent
 
 
-# 评分规则：审查分 → 积分变化
+# 评分规则：审查分 → 积分变化（与全局规则提示词保持一致）
 SCORE_RULES = {
-    5: +5,   # 超出预期
+    5: +10,  # 超出预期
     4: +5,   # 完全达标
-    3: 0,    # 基本达标
+    3: 0,    # 基本达标（不写记录）
     2: -5,   # 部分不足
-    1: -5,   # 严重不足
+    1: -10,  # 严重不足
 }
 
 
