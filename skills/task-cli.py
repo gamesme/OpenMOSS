@@ -525,14 +525,21 @@ def cmd_update(args):
 
     headers = _headers(args.key)
 
+    # 确定目标目录：优先使用 --skill-dir 参数，否则用脚本所在目录
+    if hasattr(args, 'skill_dir') and args.skill_dir:
+        target_dir = pathlib.Path(args.skill_dir).resolve()
+        target_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        target_dir = pathlib.Path(__file__).resolve().parent
+
     # 下载最新 CLI
     print("⬇️  下载最新 task-cli.py ...")
     try:
         r = requests.get(f"{BASE_URL}/api/tools/cli", headers=headers)
         if r.status_code == 200:
-            cli_path = pathlib.Path(__file__).resolve()
+            cli_path = target_dir / "task-cli.py"
             cli_path.write_text(r.text, encoding="utf-8")
-            print("✅ task-cli.py 已更新")
+            print(f"✅ task-cli.py 已更新 → {cli_path}")
         else:
             print(f"❌ 下载失败 ({r.status_code}): {r.text[:200]}")
     except Exception as e:
@@ -543,9 +550,9 @@ def cmd_update(args):
     try:
         r = requests.get(f"{BASE_URL}/api/agents/me/skill", headers=headers)
         if r.status_code == 200:
-            skill_path = pathlib.Path(__file__).resolve().parent / "SKILL.md"
+            skill_path = target_dir / "SKILL.md"
             skill_path.write_text(r.text, encoding="utf-8")
-            print("✅ SKILL.md 已更新（API Key 已自动填入）")
+            print(f"✅ SKILL.md 已更新（API Key 已自动填入）→ {skill_path}")
         else:
             print(f"❌ 下载失败 ({r.status_code}): {r.text[:200]}")
     except Exception as e:
@@ -578,6 +585,7 @@ def main():
 
     # --- update ---
     p = subparsers.add_parser("update", help="自动更新 CLI 工具和 SKILL.md")
+    p.add_argument("--skill-dir", help="写入目标目录（如 skills/task-executor-skill），默认为脚本所在目录")
     p.set_defaults(func=cmd_update)
 
     # --- task ---

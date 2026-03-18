@@ -46,26 +46,39 @@ python task-cli.py register --name "AI小吴" --role executor --token openclaw-r
 
 ### 第 2 步：自动初始化（API Key 写入 + SKILL.md 更新）
 
-用第 1 步得到的 API Key 运行 `update` 命令：
+用第 1 步得到的 API Key 运行 `update` 命令，通过 `--skill-dir` 指定正确的 Skill 目录：
 
 ```bash
-python task-cli.py --key <你的API_KEY> update
+python task-cli.py --key <你的API_KEY> update --skill-dir skills/<你的角色>-skill
 ```
 
+示例（executor 角色）：
+
+```bash
+python task-cli.py --key ock_xxx update --skill-dir skills/task-executor-skill
+```
+
+角色对应目录：
+- `planner` → `skills/task-planner-skill`
+- `executor` → `skills/task-executor-skill`
+- `reviewer` → `skills/task-reviewer-skill`
+- `patrol` → `skills/task-patrol-skill`
+
 这一步会自动完成：
-- ✅ 将 API Key 写入 SKILL.md（不需要手动编辑）
-- ✅ 从服务器下载最新的 task-cli.py
-- ✅ 从服务器下载最新的 SKILL.md（API Key 已自动填入）
+- ✅ 将最新 task-cli.py 写入指定 Skill 目录
+- ✅ 将 API Key 已填入的 SKILL.md 写入指定 Skill 目录
 
 ---
 
 ### 第 3 步：验证注册成功
 
+使用已写入 Skill 目录的 CLI 验证：
+
 ```bash
-python task-cli.py --key <你的API_KEY> rules
+python skills/<你的角色>-skill/task-cli.py --key <你的API_KEY> rules
 ```
 
-如果返回规则内容，说明注册成功且 Key 有效。
+如果返回规则内容，说明注册成功且 Key 有效。后续直接使用 Skill 目录下的 `task-cli.py`。
 
 ---
 
@@ -92,7 +105,7 @@ python task-cli.py --key <你的API_KEY> <命令> [参数]
 后续如需更新 CLI 或 SKILL.md：
 
 ```bash
-python task-cli.py --key <你的API_KEY> update
+python skills/<你的角色>-skill/task-cli.py --key <你的API_KEY> update --skill-dir skills/<你的角色>-skill
 ```
 
 ---
