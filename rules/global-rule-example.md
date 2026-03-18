@@ -44,6 +44,19 @@ blocked → assigned （Planner 重新分配）
 pending / assigned / blocked → cancelled （Planner 取消）
 ```
 
+## 巡查超时阈值
+
+Patrol 以下情况应标记 `blocked`：
+
+| 子任务状态    | 超时条件                          |
+| ------------- | --------------------------------- |
+| `assigned`    | 分配后超过 **2 小时** 未 `start`  |
+| `in_progress` | 启动后超过 **4 小时** 未 `submit` |
+| `rework`      | 返工后超过 **2 小时** 未 `start`  |
+| `review`      | 提交后超过 **4 小时** 无审查结果  |
+
+> `review` 状态超时时，Patrol 需在日志中写明，并通知 Planner 指派 Reviewer，无法直接 `st block`。
+
 ## 活动日志规范
 
 写入日志时 `action` 必须使用以下类型（系统会校验，非法类型会被拒绝）：
