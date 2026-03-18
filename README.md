@@ -211,6 +211,7 @@ OpenMOSS/
 |   |-- main.py                     # Entry: route registration, middleware, SPA static serving
 |   |-- config.py                   # Config loader (config.yaml)
 |   |-- database.py                 # Database initialization (SQLAlchemy)
+|   |-- scheduler.py                # Background scheduler (timeout detection, recurring renewal)
 |   |-- auth/                       # Authentication module
 |   |   +-- dependencies.py         # API Key / Admin Token validation
 |   |-- middleware/                  # Middleware
@@ -253,6 +254,13 @@ OpenMOSS/
 |
 |-- rules/                          # Global rule templates
 |-- docs/                           # Design documents
+|-- deploy/                         # Deployment configuration
+|   |-- supervisord.conf            # supervisord process config (cross-platform)
+|   |-- launchd.plist.template      # macOS launchd template
+|   |-- systemd.service.template    # Linux systemd template
+|   |-- install.sh                  # Auto-detect platform and install daemon
+|   +-- uninstall.sh                # Uninstall daemon
+|-- Makefile                        # Unified entry: setup/start/stop/restart/status/logs/install/docker-*
 |-- config.example.yaml             # Config file template
 |-- requirements.txt                # Python dependencies
 |-- Dockerfile                      # Docker build file
@@ -283,12 +291,23 @@ OpenMOSS/
 git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
-# 2. Install Python dependencies
-pip install -r requirements.txt
+# 2. Set up virtualenv, install dependencies, generate config template
+make setup
 
-# 3. Start the server (run from project root)
-python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
+# 3. Edit config (first time required)
+vi config.yaml   # Set admin.password, agent.registration_token, workspace.root
+
+# 4. Start the service
+make start
+
+# Common commands
+make status      # Check service status
+make logs        # Follow logs (Ctrl+C to exit)
+make restart     # Restart without reloading supervisord
+make stop        # Stop the service
 ```
+
+Run `make help` to see all available commands.
 
 On first launch:
 
@@ -312,6 +331,32 @@ After completing the wizard:
 | `http://localhost:6565/docs`       | Swagger API Docs      |
 | `http://localhost:6565/api/health` | Health Check          |
 
+### Deployment Options
+
+Three deployment modes are supported — choose based on your environment:
+
+| Mode | Command | Best For |
+| ---- | ------- | -------- |
+| **supervisord** (recommended) | `make start` / `make stop` | Daily development, local servers |
+| **System daemon** (auto-start on boot) | `make install` / `make uninstall` | Production servers (macOS: launchd, Linux: systemd) |
+| **Docker Compose** | `make docker-up` / `make docker-down` | Isolated deployment, cloud servers |
+
+#### Docker Compose
+
+```bash
+# Optional: edit config.yaml first (or let it auto-generate)
+make docker-up    # Build image and start in background
+make docker-logs  # Follow container logs
+make docker-down  # Stop and remove containers
+```
+
+#### System Daemon (auto-start on boot)
+
+```bash
+make install      # Detects platform (macOS/Linux) and installs daemon
+make uninstall    # Remove daemon
+```
+
 ### Building the Frontend
 
 If the `static/` directory is not present, build the frontend manually:
@@ -326,8 +371,7 @@ rm -rf ../static/*
 cp -r dist/* ../static/
 cd ..
 
-# Restart backend, frontend will auto-load
-python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
+make restart     # Or: make start if not already running
 ```
 
 ---
@@ -340,30 +384,24 @@ cd /opt
 git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
-# 2. Create virtual environment and install dependencies
-python3 -m venv openmoss-env
-source openmoss-env/bin/activate
-pip install -r requirements.txt
+# 2. Set up virtualenv and install dependencies
+make setup
 
 # 3. Configure (important)
-cp config.example.yaml config.yaml
-vi config.yaml  # or use your preferred editor (nano, vim, etc.)
+vi config.yaml
 # Make sure to update:
 #   admin.password           — Admin password
 #   agent.registration_token — Agent registration token
 #   workspace.root           — Working directory path
 
-# 4. Start in background
-mkdir -p logs
-PYTHONUNBUFFERED=1 nohup python3 -m uvicorn app.main:app \
-  --host 0.0.0.0 --port 6565 --access-log \
-  > ./logs/server.log 2>&1 &
+# 4. Start with supervisord (keeps running after terminal closes)
+make start
 
 # View logs
-tail -f logs/server.log
+make logs
 
-# Stop service
-kill $(pgrep -f "uvicorn app.main:app")
+# Install as systemd daemon (auto-start on boot)
+make install
 ```
 
 ---
@@ -422,6 +460,14 @@ workspace:
 webui:
   public_feed: false # Set to true to make activity feed publicly accessible
   feed_retention_days: 7 # Request log retention period (auto-cleanup)
+
+# Background scheduler
+scheduler:
+  timeout_check_interval_minutes: 30   # How often to scan for timed-out sub-tasks
+  assigned_timeout_hours: 2            # assigned → blocked after this many hours
+  in_progress_timeout_hours: 4         # in_progress → blocked after this many hours
+  rework_timeout_hours: 2              # rework → blocked after this many hours
+  recurring_check_interval_minutes: 5  # How often to renew done recurring sub-tasks
 ```
 
 ### Config Reference
@@ -557,7 +603,9 @@ npm run lint
 ### Infrastructure
 
 - [ ] PostgreSQL / MySQL support
-- [ ] One-click Docker deployment
+- [x] One-click Docker deployment (`make docker-up`)
+- [x] supervisord / launchd / systemd daemon (`make install`)
+- [x] Background scheduler (auto timeout detection + recurring task renewal)
 - [ ] CI/CD for frontend builds
 - [ ] i18n support
 

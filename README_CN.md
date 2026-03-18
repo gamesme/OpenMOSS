@@ -211,6 +211,7 @@ OpenMOSS/
 |   |-- main.py                     # 入口：路由注册、中间件、SPA 静态服务
 |   |-- config.py                   # 配置加载（config.yaml）
 |   |-- database.py                 # 数据库初始化（SQLAlchemy）
+|   |-- scheduler.py                # 后台调度器（超时检测 + recurring 续建）
 |   |-- auth/                       # 认证模块
 |   |   +-- dependencies.py         # API Key / Admin Token 校验
 |   |-- middleware/                  # 中间件
@@ -274,6 +275,13 @@ OpenMOSS/
 |
 |-- rules/                          # 全局规则模板
 |-- docs/                           # 设计文档
+|-- deploy/                         # 部署配置
+|   |-- supervisord.conf            # supervisord 进程配置（跨平台）
+|   |-- launchd.plist.template      # macOS launchd 模板
+|   |-- systemd.service.template    # Linux systemd 模板
+|   |-- install.sh                  # 自动识别平台并安装 daemon
+|   +-- uninstall.sh                # 卸载 daemon
+|-- Makefile                        # 统一操作入口：setup/start/stop/restart/status/logs/install/docker-*
 |-- config.example.yaml             # 配置文件模板
 |-- requirements.txt                # Python 依赖
 |-- Dockerfile                      # Docker 构建文件
@@ -304,12 +312,23 @@ OpenMOSS/
 git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
-# 2. 安装 Python 依赖
-pip install -r requirements.txt
+# 2. 一键准备环境（创建 venv、安装依赖、生成 config.yaml）
+make setup
 
-# 3. 启动服务（在项目根目录下运行）
-python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
+# 3. 编辑配置（首次必填）
+vi config.yaml   # 设置 admin.password、agent.registration_token、workspace.root
+
+# 4. 启动服务
+make start
+
+# 常用命令
+make status      # 查看服务状态
+make logs        # 实时查看日志（Ctrl+C 退出）
+make restart     # 重启 OpenMOSS 进程（不重启 supervisord）
+make stop        # 停止服务
 ```
+
+运行 `make help` 可查看全部可用命令。
 
 首次启动：
 
@@ -333,6 +352,32 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
 | `http://localhost:6565/docs`       | Swagger API 文档 |
 | `http://localhost:6565/api/health` | 健康检查接口     |
 
+### 部署方式选择
+
+提供三种部署方式，按需选择：
+
+| 方式 | 命令 | 适合场景 |
+| ---- | ---- | -------- |
+| **supervisord**（推荐） | `make start` / `make stop` | 日常开发、本地服务器 |
+| **系统级 Daemon**（开机自启） | `make install` / `make uninstall` | 生产服务器（macOS: launchd，Linux: systemd） |
+| **Docker Compose** | `make docker-up` / `make docker-down` | 隔离部署、云服务器 |
+
+#### Docker Compose
+
+```bash
+# 可选：先编辑 config.yaml（或让它自动生成）
+make docker-up    # 构建镜像并在后台启动
+make docker-logs  # 实时查看容器日志
+make docker-down  # 停止并移除容器
+```
+
+#### 系统级 Daemon（开机自启）
+
+```bash
+make install      # 自动识别平台（macOS/Linux）并安装 daemon
+make uninstall    # 卸载 daemon
+```
+
 ### 构建前端
 
 如果仓库中没有 `static/` 目录，需要手动构建前端：
@@ -347,8 +392,7 @@ rm -rf ../static/*
 cp -r dist/* ../static/
 cd ..
 
-# 重启后端，前端会自动加载
-python -m uvicorn app.main:app --host 0.0.0.0 --port 6565
+make restart     # 或：make start（如果服务未运行）
 ```
 
 ---
@@ -361,30 +405,24 @@ cd /opt
 git clone https://github.com/uluckyXH/OpenMOSS/ openmoss
 cd openmoss
 
-# 2. 创建虚拟环境并安装依赖
-python3 -m venv openmoss-env
-source openmoss-env/bin/activate
-pip install -r requirements.txt
+# 2. 一键准备环境
+make setup
 
 # 3. 配置（重要）
-cp config.example.yaml config.yaml
-vi config.yaml  # 或使用你习惯的编辑器（nano、vim 等）
+vi config.yaml
 # 请务必修改以下配置：
 #   admin.password           — 管理员密码
 #   agent.registration_token — Agent 注册令牌
 #   workspace.root           — 工作目录路径
 
-# 4. 后台启动
-mkdir -p logs
-PYTHONUNBUFFERED=1 nohup python3 -m uvicorn app.main:app \
-  --host 0.0.0.0 --port 6565 --access-log \
-  > ./logs/server.log 2>&1 &
+# 4. 启动服务（终端关闭后继续运行）
+make start
 
 # 查看日志
-tail -f logs/server.log
+make logs
 
-# 停止服务
-kill $(pgrep -f "uvicorn app.main:app")
+# 安装为 systemd daemon（开机自启）
+make install
 ```
 
 ---
@@ -446,6 +484,14 @@ workspace:
 webui:
   public_feed: false # 活动流展示页公开开关（true=任何人可访问）
   feed_retention_days: 7 # 请求日志保留天数（超期自动清理）
+
+# 后台调度器配置
+scheduler:
+  timeout_check_interval_minutes: 30   # 每隔多少分钟巡查超时子任务
+  assigned_timeout_hours: 2            # assigned 状态超过此时间未 start → blocked
+  in_progress_timeout_hours: 4         # in_progress 状态超过此时间未 submit → blocked
+  rework_timeout_hours: 2              # rework 状态超过此时间未 start → blocked
+  recurring_check_interval_minutes: 5  # 每隔多少分钟检查 done 的 recurring 子任务并续建
 ```
 
 ### 配置项说明
@@ -583,7 +629,9 @@ npm run lint
 ### 基础设施
 
 - [ ] 支持 PostgreSQL / MySQL
-- [ ] Docker 一键部署
+- [x] Docker 一键部署（`make docker-up`）
+- [x] supervisord / launchd / systemd daemon（`make install`）
+- [x] 后台调度器（自动超时检测 + recurring 任务续建）
 - [ ] CI/CD 自动构建前端
 - [ ] 多语言支持（i18n）
 - [ ] English README
