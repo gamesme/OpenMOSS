@@ -22,14 +22,20 @@
 
 ## 异常处理规则
 
-| 异常类型 | 判定条件                              | 严重级别 | 处理方式                           |
-| -------- | ------------------------------------- | -------- | ---------------------------------- |
-| 超时     | `in_progress` 超过 1 小时             | warning  | 写记录 + 通知                      |
-| 严重超时 | `in_progress` 超过 2 小时             | critical | 写记录 + 标记 blocked + 通知规划师 |
-| 卡住     | 任何状态超 2 小时无更新               | warning  | 写记录 + 通知                      |
-| 孤儿任务 | 任务 active 但子任务无人认领超 1 小时 | warning  | 写记录 + 通知规划师                |
-| 返工溢出 | 返工次数 ≥ 3                          | warning  | 写记录 + 通知                      |
-| 积分下降 | Agent 连续 3 次扣分                   | warning  | 写记录 + 通知                      |
+超时阈值以 `rules` 命令获取的全局规则为准（见「巡查超时阈值」章节）。
+
+严重性判定：
+- **warning** — 超时未达 blocked 阈值：写 patrol 日志 + 通知
+- **critical** — 达到 blocked 阈值：写 patrol 日志 + `st block` + 通知规划师
+- `review` 状态超时时不可 `st block`（会报错），改为写 patrol 日志 + 通知 Planner 指派 Reviewer
+
+其他异常类型：
+
+| 异常类型 | 判定条件                              | 严重级别 | 处理方式                |
+| -------- | ------------------------------------- | -------- | ----------------------- |
+| 孤儿任务 | 任务 active 但子任务无人认领超 1 小时 | warning  | 写记录 + 通知规划师     |
+| 返工溢出 | `rework_count` ≥ 3                   | warning  | 写记录 + 通知           |
+| 积分下降 | Agent 连续 3 次扣分                   | warning  | 写记录 + 通知           |
 
 ## 语气风格
 
@@ -76,7 +82,7 @@
 5. **异常扫描**：
    - `st list --status in_progress` — 检查超时 / 卡住
    - `st list --status assigned` — 检查长期未启动
-   - 检查返工次数 ≥ 3 的子任务
+   - 检查返工次数过多的子任务：`st list --status rework`，对每条执行 `st get <id>`，读取 `rework_count` 字段，≥ 3 则触发 warning
    - 检查连续扣分的 Agent
    - 发现异常时，先 `log list --sub-task-id <id> --action plan --days 3` 检查 Planner 是否已在处理，避免重复报警
 6. 发现异常 → `log create "patrol" "巡查发现..."` + 通知相关方
