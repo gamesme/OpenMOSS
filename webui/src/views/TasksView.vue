@@ -113,7 +113,7 @@ const selectedTaskProgress = computed(() => {
     if (!selectedTask.value) {
         return 0
     }
-    return getCompletionRatio(selectedTask.value.done_count, selectedTask.value.sub_task_count)
+    return getCompletionRatio(selectedTask.value.done_count, selectedTask.value.sub_task_count, selectedTask.value.cancelled_count)
 })
 
 
@@ -230,11 +230,12 @@ function formatPriority(value: string) {
     )
 }
 
-function getCompletionRatio(doneCount: number, totalCount: number) {
-    if (!totalCount) {
+function getCompletionRatio(doneCount: number, totalCount: number, cancelledCount: number = 0) {
+    const effectiveTotal = totalCount - cancelledCount
+    if (!effectiveTotal) {
         return 0
     }
-    return Math.round((doneCount / totalCount) * 100)
+    return Math.round((doneCount / effectiveTotal) * 100)
 }
 
 
@@ -613,11 +614,11 @@ async function openSubTaskDetail(subTaskId: string) {
                                     <div class="flex-1 flex items-center gap-1.5">
                                         <div class="flex-1 h-1.5 rounded-full bg-muted max-w-[80px]">
                                             <div class="h-1.5 rounded-full bg-emerald-500 transition-all" :style="{
-                                                width: `${getCompletionRatio(task.done_count, task.sub_task_count)}%`,
+                                                width: `${getCompletionRatio(task.done_count, task.sub_task_count, task.cancelled_count)}%`,
                                             }" />
                                         </div>
                                         <span class="tabular-nums">{{ getCompletionRatio(task.done_count,
-                                            task.sub_task_count) }}%</span>
+                                            task.sub_task_count, task.cancelled_count) }}%</span>
                                     </div>
                                     <span class="tabular-nums">{{ formatDate(task.updated_at) }}</span>
                                 </div>
@@ -757,7 +758,7 @@ async function openSubTaskDetail(subTaskId: string) {
                                             <span>{{ module.done_count }}/{{ module.sub_task_count }}</span>
                                             <div class="w-12 h-1.5 rounded-full bg-muted">
                                                 <div class="h-1.5 rounded-full bg-sky-500" :style="{
-                                                    width: `${getCompletionRatio(module.done_count, module.sub_task_count)}%`,
+                                                    width: `${getCompletionRatio(module.done_count, module.sub_task_count, module.cancelled_count)}%`,
                                                 }" />
                                             </div>
                                         </div>

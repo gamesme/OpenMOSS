@@ -16,7 +16,7 @@ agent:
 
 # CLI 工具版本（task-cli.py 自更新用，更新 CLI 后递增此值）
 cli:
-  version: 1
+  version: 2
 
 # 通知渠道（OpenMOSS 内置消息，Agent 通过 GET /config/notification 获取后自行发送）
 notification:

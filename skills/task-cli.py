@@ -16,7 +16,7 @@ import requests
 # 配置：修改为你的任务调度服务地址
 # ============================================================
 BASE_URL = "http://192.168.31.128:6565"
-CLI_VERSION = 1  # CLI 版本号，更新后递增
+CLI_VERSION = 2  # CLI 版本号，更新后递增
 
 
 # ============================================================
@@ -279,6 +279,19 @@ def cmd_sub_task_latest(args):
             print(f"  交付物: {data['deliverable']}")
         if data.get('acceptance'):
             print(f"  验收标准: {data['acceptance']}")
+
+
+def cmd_sub_task_direct(args):
+    """记录用户直接指令，自动创建/复用「直接指令」父任务"""
+    body = {"name": args.name, "description": args.desc or ""}
+    if args.session:
+        body["session_id"] = args.session
+    data = _request("post", "/sub-tasks/direct", args.key, json=body)
+    print(f"✅ 直接指令已记录: {data['id']}")
+    print(f"   名称: {data['name']}")
+    print(f"   状态: {data['status']}")
+    print(f"   下一步: st start {data['id']}")
+    _print_json(data)
 
 
 def cmd_sub_task_claim(args):
@@ -677,6 +690,12 @@ def main():
     p = st_sub.add_parser("latest", help="获取某任务下我的最新子任务")
     p.add_argument("task_id", help="任务 ID")
     p.set_defaults(func=cmd_sub_task_latest)
+
+    p = st_sub.add_parser("direct", help="记录用户直接指令（自动创建父任务）")
+    p.add_argument("name", help="指令描述")
+    p.add_argument("--desc", default="", help="详细说明")
+    p.add_argument("--session", default=None, help="OpenClaw 会话 ID")
+    p.set_defaults(func=cmd_sub_task_direct)
 
     p = st_sub.add_parser("claim", help="认领子任务")
     p.add_argument("id", help="子任务 ID")

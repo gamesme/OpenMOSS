@@ -78,9 +78,35 @@ class SubTaskUpdateRequest(BaseModel):
     priority: Optional[str] = Field(None, description="优先级: high/medium/low")
 
 
+class DirectSubTaskRequest(BaseModel):
+    name: str = Field(..., description="指令描述")
+    description: str = Field("", description="详细说明")
+    session_id: Optional[str] = Field(None, description="当前 OpenClaw 会话 ID")
+
+
 # ============================================================
 # CRUD
 # ============================================================
+
+@router.post("/direct", response_model=SubTaskResponse, summary="记录用户直接指令")
+async def create_direct_sub_task(
+    req: DirectSubTaskRequest,
+    agent: Agent = Depends(require_role("executor")),
+    db: Session = Depends(get_db),
+):
+    """执行者收到用户直接指令时调用：自动创建/复用「直接指令」父任务，子任务状态直接进入 assigned。"""
+    try:
+        sub_task = sub_task_service.create_direct_sub_task(
+            db,
+            agent_id=agent.id,
+            name=req.name,
+            description=req.description,
+            session_id=req.session_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return sub_task
+
 
 @router.post("", response_model=SubTaskResponse, summary="创建子任务")
 async def create_sub_task(

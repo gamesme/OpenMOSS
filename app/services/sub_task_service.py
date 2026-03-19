@@ -308,3 +308,50 @@ def cancel_sub_task(db: Session, sub_task_id: str) -> SubTask:
     db.commit()
     db.refresh(sub_task)
     return sub_task
+
+
+DIRECT_TASK_NAME = "直接指令"
+
+
+def create_direct_sub_task(
+    db: Session,
+    agent_id: str,
+    name: str,
+    description: str = "",
+    session_id: str = None,
+) -> SubTask:
+    """用户直接指令：找到或创建「直接指令」父任务，在其下创建子任务并直接指派给调用 Agent。"""
+    # 找或建父任务（bypass task_service.create_task，因其 valid_types 不含 "direct"）
+    task = db.query(Task).filter(
+        Task.name == DIRECT_TASK_NAME,
+        Task.type == "direct",
+    ).first()
+    if not task:
+        task = Task(
+            id=str(uuid.uuid4()),
+            name=DIRECT_TASK_NAME,
+            description="用户直接下达给 Agent 的指令，无需经过 Planner 分解。",
+            type="direct",
+            status="active",
+        )
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+
+    # 创建子任务，assigned_agent → initial_status 自动为 "assigned"
+    sub_task = create_sub_task(
+        db,
+        task_id=task.id,
+        name=name,
+        description=description,
+        priority="high",
+        assigned_agent=agent_id,
+    )
+
+    # 如有 session_id，立刻写入
+    if session_id:
+        sub_task.current_session_id = session_id
+        db.commit()
+        db.refresh(sub_task)
+
+    return sub_task
