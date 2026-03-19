@@ -30,7 +30,11 @@ start:  ## 启动服务（supervisord）
 	fi
 
 stop:   ## 停止服务（supervisord）
-	@[ -f $(SOCK) ] && .venv/bin/supervisorctl -c $(CONF) shutdown || echo "服务未运行"
+	@if [ -f $(SOCK) ]; then \
+	  .venv/bin/supervisorctl -c $(CONF) shutdown; true; \
+	else \
+	  echo "服务未运行"; \
+	fi
 
 restart: ## 重启 OpenMOSS 进程（不重启 supervisord）
 	.venv/bin/supervisorctl -c $(CONF) restart openmoss
