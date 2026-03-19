@@ -46,8 +46,9 @@ const showDeleteConfirm = ref(false)
 const deleteTarget = ref('')
 
 // 模板查看/编辑
-const templateForm = ref({ role: '', content: '', filename: '' })
+const templateForm = ref({ role: '', content: '', filename: '', soul: '', agents: '' })
 const templateEditing = ref(false)
+const templateActiveLayer = ref<'soul' | 'agents'>('soul')
 
 // 组合预览
 const composedPrompt = ref('')
@@ -233,6 +234,10 @@ const renderedMarkdown = computed(() => {
 const renderedTemplateContent = computed(() => {
   if (!templateForm.value.content) return ''
   return marked(templateForm.value.content) as string
+})
+
+const templateIsSplit = computed(() => {
+  return templateForm.value.filename.endsWith('/')
 })
 
 const agentViewData = ref({ slug: '', name: '', role: '', description: '', content: '' })
@@ -451,18 +456,46 @@ async function confirmDelete() {
 async function openTemplate(role: string) {
   try {
     const { data } = await promptsApi.getTemplate(role)
-    templateForm.value = { role: data.role, content: data.content, filename: data.filename }
+    templateForm.value = {
+      role: data.role,
+      content: data.content,
+      filename: data.filename,
+      soul: data.soul ?? '',
+      agents: data.agents ?? '',
+    }
     templateEditing.value = false
+    templateActiveLayer.value = 'soul'
     mode.value = 'template'
   } catch {
     showMessage('加载模板失败', 'error')
   }
 }
 
+async function saveTemplateLayer(layer: 'soul' | 'agents') {
+  saving.value = true
+  try {
+    const content = layer === 'soul' ? templateForm.value.soul : templateForm.value.agents
+    await promptsApi.updateTemplate(templateForm.value.role, content, layer)
+    showMessage(`${layer === 'soul' ? 'SOUL.md' : 'AGENTS.md'} 已保存`)
+    templateEditing.value = false
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: string } } }
+    showMessage(err.response?.data?.detail || '保存失败', 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
 async function saveTemplate() {
   saving.value = true
   try {
-    await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.content)
+    if (templateIsSplit.value) {
+      // Save both layers
+      await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.soul, 'soul')
+      await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.agents, 'agents')
+    } else {
+      await promptsApi.updateTemplate(templateForm.value.role, templateForm.value.content)
+    }
     showMessage('模板已保存')
     templateEditing.value = false
     await loadData()
@@ -1019,7 +1052,46 @@ function goBack() {
           </div>
         </div>
 
-        <Card>
+        <!-- 分层模板：双 Tab 编辑器 -->
+        <template v-if="templateIsSplit">
+          <div class="flex border-b">
+            <button
+              class="px-4 py-2 text-sm font-medium transition-colors"
+              :class="templateActiveLayer === 'soul'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="templateActiveLayer = 'soul'">
+              SOUL.md（身份层）
+            </button>
+            <button
+              class="px-4 py-2 text-sm font-medium transition-colors"
+              :class="templateActiveLayer === 'agents'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="templateActiveLayer = 'agents'">
+              AGENTS.md（行为层）
+            </button>
+          </div>
+          <Card>
+            <CardContent class="p-0">
+              <template v-if="templateActiveLayer === 'soul'">
+                <textarea v-if="templateEditing" v-model="templateForm.soul"
+                  class="w-full min-h-[500px] p-6 text-sm font-mono bg-background border-0 rounded-lg resize-y focus:outline-none focus:ring-0" />
+                <div v-else class="p-6 prose prose-sm dark:prose-invert max-w-none"
+                  v-html="marked(templateForm.soul)" />
+              </template>
+              <template v-else>
+                <textarea v-if="templateEditing" v-model="templateForm.agents"
+                  class="w-full min-h-[500px] p-6 text-sm font-mono bg-background border-0 rounded-lg resize-y focus:outline-none focus:ring-0" />
+                <div v-else class="p-6 prose prose-sm dark:prose-invert max-w-none"
+                  v-html="marked(templateForm.agents)" />
+              </template>
+            </CardContent>
+          </Card>
+        </template>
+
+        <!-- 旧格式：单编辑器 -->
+        <Card v-else>
           <CardContent class="p-0">
             <textarea v-if="templateEditing" v-model="templateForm.content"
               class="w-full min-h-[500px] p-6 text-sm font-mono bg-background border-0 rounded-lg resize-y focus:outline-none focus:ring-0" />

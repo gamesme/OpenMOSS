@@ -567,6 +567,8 @@ export interface PromptTemplate {
   role: string
   filename: string
   content: string
+  soul?: string
+  agents?: string
 }
 
 export interface AgentPromptMeta {
@@ -589,8 +591,8 @@ export const promptsApi = {
   // 模板
   listTemplates: () => api.get<PromptTemplate[]>('/admin/prompts/templates'),
   getTemplate: (role: string) => api.get<PromptTemplate>(`/admin/prompts/templates/${role}`),
-  updateTemplate: (role: string, content: string) =>
-    api.put(`/admin/prompts/templates/${role}`, { content }),
+  updateTemplate: (role: string, content: string, layer?: 'soul' | 'agents') =>
+    api.put(`/admin/prompts/templates/${role}`, { content, layer: layer ?? null }),
 
   // Agent 提示词
   listAgents: () => api.get<AgentPromptMeta[]>('/admin/prompts/agents'),

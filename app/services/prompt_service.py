@@ -87,27 +87,56 @@ def list_templates() -> list[dict]:
 
     result = []
     for path in sorted(TEMPLATES_DIR.iterdir()):
-        if not _is_valid_md(path):
-            continue
-        # 从文件名提取角色：task-executor.md → executor, planner.md → planner
-        role = path.stem
-        if role.startswith("task-"):
-            role = role[5:]
-        content = path.read_text(encoding="utf-8")
-        result.append({
-            "role": role,
-            "filename": path.name,
-            "content": content,
-        })
+        if path.is_dir() and not path.name.startswith('.'):
+            # New subdirectory format: executor/, planner/, etc.
+            role = path.name
+            soul_path = path / "SOUL.md"
+            agents_path = path / "AGENTS.md"
+            soul = soul_path.read_text(encoding="utf-8") if soul_path.exists() else ""
+            agents = agents_path.read_text(encoding="utf-8") if agents_path.exists() else ""
+            content = "\n\n---\n\n".join(filter(None, [soul.strip(), agents.strip()]))
+            result.append({
+                "role": role,
+                "filename": f"{role}/",
+                "content": content,
+                "soul": soul,
+                "agents": agents,
+            })
+        elif _is_valid_md(path):
+            # Legacy flat file format
+            role = path.stem
+            if role.startswith("task-"):
+                role = role[5:]
+            content = path.read_text(encoding="utf-8")
+            result.append({
+                "role": role,
+                "filename": path.name,
+                "content": content,
+            })
     return result
 
 
 def get_template(role: str) -> Optional[dict]:
-    """获取指定角色模板（支持 {role}.md 和 task-{role}.md 两种命名）"""
-    # 优先查找 {role}.md
+    """获取指定角色模板（支持子目录格式和旧版平铺文件格式）"""
+    # New: subdirectory format
+    subdir = TEMPLATES_DIR / role
+    if subdir.is_dir():
+        soul_path = subdir / "SOUL.md"
+        agents_path = subdir / "AGENTS.md"
+        soul = soul_path.read_text(encoding="utf-8") if soul_path.exists() else ""
+        agents = agents_path.read_text(encoding="utf-8") if agents_path.exists() else ""
+        content = "\n\n---\n\n".join(filter(None, [soul.strip(), agents.strip()]))
+        return {
+            "role": role,
+            "filename": f"{role}/",
+            "content": content,
+            "soul": soul,
+            "agents": agents,
+        }
+
+    # Legacy: flat file format
     path = TEMPLATES_DIR / f"{role}.md"
     if not path.exists():
-        # 兼容 task-{role}.md 命名
         path = TEMPLATES_DIR / f"task-{role}.md"
     if not path.exists():
         return None
@@ -118,15 +147,35 @@ def get_template(role: str) -> Optional[dict]:
     }
 
 
-def update_template(role: str, content: str) -> dict:
+def update_template(role: str, content: str, layer: Optional[str] = None) -> dict:
     """更新角色模板内容"""
     if role not in VALID_ROLES:
         raise ValueError(f"无效角色 '{role}'，可选: {', '.join(VALID_ROLES)}")
 
-    TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
-    path = TEMPLATES_DIR / f"{role}.md"
-    path.write_text(content, encoding="utf-8")
-    return {"role": role, "filename": path.name}
+    subdir = TEMPLATES_DIR / role
+    if subdir.is_dir():
+        # New subdirectory format
+        if layer == "soul":
+            subdir.mkdir(parents=True, exist_ok=True)
+            (subdir / "SOUL.md").write_text(content, encoding="utf-8")
+            return {"role": role, "filename": f"{role}/SOUL.md"}
+        elif layer == "agents":
+            subdir.mkdir(parents=True, exist_ok=True)
+            (subdir / "AGENTS.md").write_text(content, encoding="utf-8")
+            return {"role": role, "filename": f"{role}/AGENTS.md"}
+        else:
+            # Write full combined content — split at separator
+            parts = content.split("\n\n---\n\n", 1)
+            subdir.mkdir(parents=True, exist_ok=True)
+            (subdir / "SOUL.md").write_text(parts[0].strip(), encoding="utf-8")
+            (subdir / "AGENTS.md").write_text(parts[1].strip() if len(parts) > 1 else "", encoding="utf-8")
+            return {"role": role, "filename": f"{role}/"}
+    else:
+        # Legacy flat file format
+        TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+        path = TEMPLATES_DIR / f"{role}.md"
+        path.write_text(content, encoding="utf-8")
+        return {"role": role, "filename": path.name}
 
 
 # ======================================================================
@@ -309,7 +358,8 @@ def generate_onboarding(role: str = "") -> str:
     """生成平台对接指引文本（变量从 config 自动填充）"""
     external_url = config.server_external_url
     registration_token = config.registration_token
-    bs = "\\"  # single backslash
+    skill_dir = f"skills/task-{role}-skill" if role else "skills/task-<role>-skill"
+    bs = "\\"
 
     lines = [
         "## 🔧 平台对接（仅用于首次注册，完成后请删除本段）",
@@ -320,39 +370,29 @@ def generate_onboarding(role: str = "") -> str:
         "### 第一步：注册到任务系统（如已注册可跳过）",
         "",
         "```bash",
-        f"curl -X POST {external_url}/api/agents/register {bs}",
-        f'  -H "Content-Type: application/json" {bs}',
-        f"""  -d '{{"name": "你的名字", "role": "{role}", "token": "{registration_token}"}}'""",
+        f'python task-cli.py register --name "你的名字" --role {role or "<role>"} {bs}',
+        f'  --token "{registration_token}" --description "你的专业能力描述"',
         "```",
         "",
         "→ 返回你的 API Key，后续所有操作需要携带",
         "",
-        "### 第二步：获取工作工具并保存为 Skill",
+        "### 第二步：自动初始化（API Key 写入 + SKILL.md 更新）",
         "",
         "```bash",
-        "# 下载 CLI 工具",
-        f"curl -o task-cli.py {bs}",
-        f'  -H "X-Agent-Token: 你的API_KEY" {bs}',
-        f"  {external_url}/api/tools/cli",
-        "",
-        "# 获取技能提示词（Skill 说明）",
-        f'curl -H "X-Agent-Token: 你的API_KEY" {bs}',
-        f"  {external_url}/api/agents/me/skill",
+        f"python task-cli.py --key <你的API_KEY> update --skill-dir {skill_dir}",
         "```",
         "",
-        "**请将以上内容保存为 Skill 目录**：",
-        f"- 创建目录 `task-{role}-skill/`",
-        f"- 将 CLI 工具保存为 `task-{role}-skill/task-cli.py`",
-        f"- 将技能提示词保存为 `task-{role}-skill/SKILL.md`",
-        "- Skill 是你的工作工具箱，后续按 SKILL.md 中的指引操作即可",
+        "这一步会自动完成：",
+        "- ✅ 将最新 task-cli.py 写入指定 Skill 目录",
+        "- ✅ 将 API Key 已填入的 SKILL.md 写入指定 Skill 目录",
         "",
-        "### 第三步：开始工作",
+        "### 第三步：验证注册成功",
         "",
         "```bash",
-        "python task-cli.py rules    # 查看工作规则",
-        "python task-cli.py next     # 领取任务",
-        "python task-cli.py submit   # 提交成果",
+        f"python {skill_dir}/task-cli.py --key <你的API_KEY> rules",
         "```",
+        "",
+        "如果返回规则内容，说明注册成功且 Key 有效。",
         "",
         "### 连接信息",
         f"- 服务地址: {external_url}",

@@ -30,6 +30,7 @@ class AgentPromptUpdateRequest(BaseModel):
 
 class TemplateUpdateRequest(BaseModel):
     content: str = Field(..., description="模板内容")
+    layer: Optional[str] = Field(None, description="写入层：soul / agents / null（null 表示整体写入）")
 
 
 # ── 模板接口 ─────────────────────────────────────────────
@@ -50,7 +51,7 @@ async def get_template(role: str, _=Depends(verify_admin)):
 @router.put("/templates/{role}", summary="更新角色模板")
 async def update_template(role: str, req: TemplateUpdateRequest, _=Depends(verify_admin)):
     try:
-        return prompt_service.update_template(role, req.content)
+        return prompt_service.update_template(role, req.content, layer=req.layer)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

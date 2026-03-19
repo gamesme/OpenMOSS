@@ -82,18 +82,6 @@ python skills/<你的角色>-skill/task-cli.py --key <你的API_KEY> rules
 
 ---
 
-### 第 4 步：删除本文件（完成清理）
-
-注册完成后，本引导文件不再需要，运行以下命令删除：
-
-```bash
-python -c "import pathlib; pathlib.Path('agent-onboarding.md').unlink(missing_ok=True); print('✅ agent-onboarding.md 已删除')"
-```
-
-> **为什么要删除？** 本文件是一次性引导，保留会占用 Skill 文件槽位并带来混淆。删除后你的 Skill 只包含 SKILL.md 和 task-cli.py，结构更干净。
-
----
-
 ## 之后的使用
 
 注册完成后，每次执行命令时带上你的 Key（已写入 SKILL.md，参考其中的认证信息）：
@@ -118,4 +106,3 @@ python skills/<你的角色>-skill/task-cli.py --key <你的API_KEY> update --sk
 | API Key 丢失       | 联系管理员通过 WebUI 或 `POST /admin/agents/{id}/reset-key` 重置 |
 | 注册时提示名称重复 | 更换一个唯一的名称                                      |
 | `update` 后 SKILL.md 里 API Key 还是空 | 检查 `update` 是否返回 200；确认服务已启动且 Key 有效 |
-| 删除命令找不到文件 | 说明文件已被删除或不在当前目录，正常情况忽略即可 |
