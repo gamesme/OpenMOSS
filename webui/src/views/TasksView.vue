@@ -725,6 +725,10 @@ async function openSubTaskDetail(subTaskId: string) {
                                         <span class="font-medium text-amber-500">{{
                                             selectedTask.rework_count
                                         }}</span></span>
+                                    <span v-if="selectedTask.cancelled_count">已取消
+                                        <span class="font-medium text-stone-400">{{
+                                            selectedTask.cancelled_count
+                                        }}</span></span>
                                 </div>
                                 <div class="flex gap-4 text-[11px] text-muted-foreground/60">
                                     <span>创建于 {{ formatDate(selectedTask.created_at) }}</span>
