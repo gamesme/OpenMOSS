@@ -536,14 +536,14 @@ async function openSubTaskDetail(subTaskId: string) {
     <TooltipProvider>
         <div class="flex flex-col h-[calc(100vh-3.5rem)]">
             <!-- ─── 顶栏：搜索 + 筛选 + 刷新 ─── -->
-            <header class="shrink-0 border-b border-border/40 bg-background px-4 py-3 space-y-2.5">
-                <div class="flex items-center gap-3">
-                    <div class="relative flex-1 max-w-md">
+            <header class="shrink-0 border-b border-border/40 bg-background px-3 py-2.5 space-y-2 lg:px-4 lg:py-3 lg:space-y-2.5">
+                <div class="flex items-center gap-2 lg:gap-3">
+                    <div class="relative flex-1 min-w-0">
                         <Search
                             class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input v-model="taskKeyword" class="h-9 bg-muted/30 pl-10 text-sm" placeholder="搜索任务名或说明…" />
                     </div>
-                    <Badge variant="secondary" class="h-7 px-2.5 text-xs tabular-nums shrink-0">
+                    <Badge variant="secondary" class="h-7 px-2.5 text-xs tabular-nums shrink-0 hidden sm:inline-flex">
                         {{ taskPageData.total }} 个任务
                     </Badge>
                     <Button variant="ghost" size="icon" class="h-8 w-8 shrink-0"
@@ -552,19 +552,19 @@ async function openSubTaskDetail(subTaskId: string) {
                     </Button>
                 </div>
 
-                <div class="flex items-center gap-4">
-                    <div class="flex flex-wrap gap-1.5">
+                <div class="flex items-center gap-2 lg:gap-4 overflow-x-auto scrollbar-hide -mx-3 px-3 lg:mx-0 lg:px-0">
+                    <div class="flex gap-1 lg:gap-1.5 shrink-0">
                         <Button v-for="option in taskStatusOptions" :key="option.value" size="sm"
                             :variant="taskStatus === option.value ? 'default' : 'ghost'"
-                            class="h-7 rounded-full px-3 text-xs" @click="taskStatus = option.value">
+                            class="h-7 rounded-full px-2.5 text-xs shrink-0 lg:px-3" @click="taskStatus = option.value">
                             {{ option.label }}
                         </Button>
                     </div>
-                    <Separator orientation="vertical" class="h-4 opacity-30" />
-                    <div class="flex gap-1.5">
+                    <Separator orientation="vertical" class="h-4 opacity-30 shrink-0" />
+                    <div class="flex gap-1 lg:gap-1.5 shrink-0">
                         <Button v-for="option in taskTypeOptions" :key="option.value" size="sm"
                             :variant="taskType === option.value ? 'secondary' : 'ghost'"
-                            class="h-7 rounded-full px-3 text-xs" @click="taskType = option.value">
+                            class="h-7 rounded-full px-2.5 text-xs shrink-0 lg:px-3" @click="taskType = option.value">
                             {{ option.label }}
                         </Button>
                     </div>
@@ -572,9 +572,9 @@ async function openSubTaskDetail(subTaskId: string) {
             </header>
 
             <!-- ─── 主体：左列表 + 右详情 ─── -->
-            <div class="flex flex-1 min-h-0">
+            <div class="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
                 <!-- 任务列表 -->
-                <div class="w-full lg:w-[380px] xl:w-[420px] shrink-0 border-r border-border/40 overflow-y-auto">
+                <div class="w-full lg:w-[380px] xl:w-[420px] shrink-0 lg:border-r border-border/40 lg:overflow-y-auto">
                     <!-- 错误 -->
                     <div v-if="taskListError" class="p-6 text-center">
                         <AlertCircle class="mx-auto h-5 w-5 text-muted-foreground" />
@@ -650,7 +650,7 @@ async function openSubTaskDetail(subTaskId: string) {
                 </div>
 
                 <!-- ─── 右侧详情 ─── -->
-                <div ref="detailAnchor" class="hidden lg:flex flex-col flex-1 min-h-0 overflow-y-auto">
+                <div ref="detailAnchor" class="flex flex-col flex-1 min-h-0 lg:overflow-y-auto border-t border-border/40 lg:border-t-0">
                     <!-- 加载中 -->
                     <div v-if="loadingDetail" class="flex items-center justify-center flex-1">
                         <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
@@ -666,7 +666,7 @@ async function openSubTaskDetail(subTaskId: string) {
                     </div>
 
                     <!-- 任务详情 -->
-                    <div v-else-if="selectedTask" :key="detailKey" class="p-6 space-y-6 animate-slide-up">
+                    <div v-else-if="selectedTask" :key="detailKey" class="p-4 space-y-5 lg:p-6 lg:space-y-6 animate-slide-up">
                         <!-- 任务头 -->
                         <div>
                             <div class="flex items-start justify-between gap-3">
@@ -875,9 +875,12 @@ async function openSubTaskDetail(subTaskId: string) {
 
                     <!-- 未选择任务 -->
                     <div v-if="!loadingDetail && !detailError && !selectedTask"
-                        class="flex flex-col items-center justify-center flex-1 text-muted-foreground/40">
+                        class="flex flex-col items-center justify-center flex-1 py-10 lg:py-0 text-muted-foreground/40">
                         <FolderKanban class="h-8 w-8 mb-3" />
-                        <p class="text-sm font-medium text-muted-foreground/60">点击左侧任务查看详情</p>
+                        <p class="text-sm font-medium text-muted-foreground/60">
+                            <span class="hidden lg:inline">点击左侧任务查看详情</span>
+                            <span class="lg:hidden">点击上方任务查看详情</span>
+                        </p>
                         <p class="text-xs mt-1">模块拆分和子任务会在这里展示</p>
                     </div>
                 </div>
@@ -1003,5 +1006,14 @@ async function openSubTaskDetail(subTaskId: string) {
 
 .animate-slide-up {
     animation: slide-up-fade-in 0.35s ease-out both;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }
 </style>
