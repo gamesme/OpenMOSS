@@ -4,6 +4,7 @@
 PYTHON   ?= .venv/bin/python
 CONF     := deploy/supervisord.conf
 SOCK     := supervisord.sock
+PID      := supervisord.pid
 
 .PHONY: help setup start stop restart status logs install uninstall \
         docker-up docker-down docker-logs docker-build clean
@@ -25,15 +26,19 @@ setup:  ## 创建 venv 并安装依赖
 # ── supervisord 方式（跨平台，推荐日常开发）────────────────
 
 start:  ## 启动服务（supervisord）
-	@if [ -f $(SOCK) ]; then echo "服务已在运行，请用 make restart"; else \
+	@if .venv/bin/supervisorctl -c $(CONF) pid >/dev/null 2>&1; then \
+	  echo "服务已在运行，请用 make restart"; \
+	else \
+	  rm -f $(SOCK) $(PID); \
 	  mkdir -p logs && .venv/bin/supervisord -c $(CONF) && sleep 1 && $(MAKE) status; \
 	fi
 
 stop:   ## 停止服务（supervisord）
-	@if [ -f $(SOCK) ]; then \
-	  .venv/bin/supervisorctl -c $(CONF) shutdown; true; \
+	@if .venv/bin/supervisorctl -c $(CONF) pid >/dev/null 2>&1; then \
+	  .venv/bin/supervisorctl -c $(CONF) shutdown; \
 	else \
-	  echo "服务未运行"; \
+	  rm -f $(SOCK) $(PID); \
+	  echo "服务未运行（已清理残留文件）"; \
 	fi
 
 restart: ## 重启 OpenMOSS 进程（不重启 supervisord）
