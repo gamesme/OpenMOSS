@@ -56,7 +56,7 @@ In a traditional single-agent setup, the AI works alone — when it hits a probl
 The entire process requires **zero human intervention**. Agents run autonomously through cron-based wake-ups.
 
 > [!IMPORTANT]
-> OpenMOSS performance is highly dependent on the underlying LLM. Larger context windows yield better results. We recommend GPT-5.3-Codex or GPT-5.4.
+> OpenMOSS performance is highly dependent on the underlying LLM. Larger context windows yield better results. We recommend using the latest frontier models (e.g., Claude Opus, GPT-4o, Gemini 2.5 Pro).
 
 > [!WARNING]
 > Running multiple agents multiplies model token consumption. Set appropriate rate limits to prevent unexpected costs.
@@ -229,9 +229,8 @@ OpenMOSS/
 |   |   |-- stores/                 # Pinia state management
 |   |   |-- composables/            # Composables
 |   |   +-- router/                 # Vue Router
-|   +-- dist/                       # Build output (npm run build)
 |
-|-- static/                         # Frontend build output (copied from webui/dist/, served by backend)
+|-- static/                         # Frontend build output (npm run build outputs here directly, served by backend)
 |
 |-- prompts/                        # Agent role prompts
 |   |-- task-planner.md             # Planner prompt
@@ -364,11 +363,7 @@ If the `static/` directory is not present, build the frontend manually:
 ```bash
 cd webui
 npm install
-npm run build
-
-# Clear old files and copy new build output
-rm -rf ../static/*
-cp -r dist/* ../static/
+npm run build    # Outputs directly to ../static/
 cd ..
 
 make restart     # Or: make start if not already running

@@ -650,7 +650,7 @@ async function openSubTaskDetail(subTaskId: string) {
                 </div>
 
                 <!-- ─── 右侧详情 ─── -->
-                <div ref="detailAnchor" class="flex flex-col flex-1 min-h-0 lg:overflow-y-auto border-t border-border/40 lg:border-t-0">
+                <div ref="detailAnchor" class="flex flex-col flex-1 min-h-0 min-w-0 lg:overflow-y-auto border-t border-border/40 lg:border-t-0">
                     <!-- 加载中 -->
                     <div v-if="loadingDetail" class="flex items-center justify-center flex-1">
                         <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />

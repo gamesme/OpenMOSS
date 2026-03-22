@@ -117,7 +117,7 @@ function handleLogout() {
           {{menuItems.find(i => i.path === route.path)?.title || ''}}
         </h1>
       </header>
-      <main class="flex-1 p-2 sm:p-4 lg:p-6">
+      <main class="flex-1 min-w-0 overflow-hidden p-2 sm:p-4 lg:p-6">
         <router-view />
       </main>
     </SidebarInset>
